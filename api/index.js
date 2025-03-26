@@ -6,8 +6,21 @@ require('dotenv').config();
 const app = express();
 
 // Configuración de CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://elaborate-torte-d3511a.netlify.app'
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    // Permitir solicitudes sin origin (como las de Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('No permitido por CORS'));
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 
