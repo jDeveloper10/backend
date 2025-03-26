@@ -71,10 +71,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Puerto
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+// Puerto - Render requiere que usemos process.env.PORT
+const port = process.env.PORT || 10000;
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Servidor corriendo en el puerto ${port}`);
+  console.log('Ambiente:', process.env.NODE_ENV);
+  console.log('Host:', '0.0.0.0');
 });
 
 module.exports = app;
