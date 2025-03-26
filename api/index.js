@@ -6,12 +6,15 @@ require('dotenv').config();
 const app = express();
 
 // Configuración de CORS
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
 
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Configuración de la conexión a PostgreSQL con manejo de errores
+// Configurar el pool de conexiones
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -19,14 +22,39 @@ const pool = new Pool({
   }
 });
 
-// Prueba de conexión a la base de datos
+// Middleware para manejar errores
+app.use((err, req, res, next) => {
+  console.error('Error middleware:', err);
+  res.status(500).json({ 
+    message: 'Error interno del servidor',
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
+// Middleware para logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Test de conexión a la base de datos
 pool.connect()
   .then(() => {
-    console.log('Conectado exitosamente a PostgreSQL');
+    console.log('Conectado a PostgreSQL');
   })
   .catch(err => {
-    console.error('Error al conectar a PostgreSQL:', err.message);
+    console.error('Error al conectar a PostgreSQL:', err);
   });
+
+// Rutas
+const authRoutes = require('../routes/authRoutes');
+const adminRoutes = require('../routes/adminRoutes');
+const attendanceRoutes = require('../routes/attendanceRoutes');
+
+app.use('/auth', authRoutes);
+app.use('/admin', adminRoutes);
+app.use('/attendance', attendanceRoutes);
 
 // Ruta de prueba
 app.get('/', async (req, res) => {
@@ -50,18 +78,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-// Importar rutas
-const authRoutes = require('../routes/authRoutes');
-const attendanceRoutes = require('../routes/attendanceRoutes');
-const buttonControlRoutes = require('../routes/buttonControlRoutes');
-const adminRoutes = require('../routes/adminRoutes');
-
-// Rutas
-app.use('/auth', authRoutes);
-app.use('/attendance', attendanceRoutes);
-app.use('/buttons', buttonControlRoutes);
-app.use('/admin', adminRoutes);
-
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -69,6 +85,14 @@ app.use((err, req, res, next) => {
     error: 'Error interno del servidor',
     message: err.message
   });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
 });
 
 // Puerto - Render requiere que usemos process.env.PORT
