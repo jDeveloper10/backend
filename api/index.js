@@ -11,21 +11,38 @@ app.use(cors());
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Configuración de la conexión a PostgreSQL
+// Configuración de la conexión a PostgreSQL con manejo de errores
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_7KkRFDotQT1X@ep-small-snowflake-a5re8byp-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require'
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
+
+// Prueba de conexión a la base de datos
+pool.connect()
+  .then(() => {
+    console.log('Conectado exitosamente a PostgreSQL');
+  })
+  .catch(err => {
+    console.error('Error al conectar a PostgreSQL:', err.message);
+  });
 
 // Ruta de prueba
 app.get('/', async (req, res) => {
   try {
-    await pool.connect();
-    res.json({ 
-      message: 'API funcionando correctamente',
-      database: 'Conectada',
-      timestamp: new Date().toISOString()
-    });
+    const client = await pool.connect();
+    try {
+      res.json({ 
+        message: 'API funcionando correctamente',
+        database: 'Conectada',
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      client.release();
+    }
   } catch (error) {
+    console.error('Error en la ruta de prueba:', error);
     res.status(500).json({ 
       error: 'Error al conectar con la base de datos',
       details: error.message
@@ -45,13 +62,19 @@ app.use('/attendance', attendanceRoutes);
 app.use('/buttons', buttonControlRoutes);
 app.use('/admin', adminRoutes);
 
-// Manejo de errores
+// Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ 
     error: 'Error interno del servidor',
     message: err.message
   });
+});
+
+// Puerto
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
 module.exports = app;
