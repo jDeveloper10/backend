@@ -18,9 +18,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
-// Middleware para servir archivos estáticos
-app.use(express.static(path.join(__dirname, '../public')));
-
 // Middleware para logging
 app.use(morgan('combined'));
 
@@ -45,8 +42,16 @@ app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/attendance', attendanceRoutes);
 
-// Ruta de prueba
+// Middleware para servir archivos estáticos
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Ruta raíz - redirigir a tables.html
 app.get('/', (req, res) => {
+  res.redirect('/tables.html');
+});
+
+// Ruta de API
+app.get('/api', (req, res) => {
   res.json({ message: 'API funcionando correctamente' });
 });
 
