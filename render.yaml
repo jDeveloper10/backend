@@ -8,6 +8,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_7KkRFDotQT1X@ep-small-snowflake-a5re8byp-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+        sync: false
       - key: JWT_SECRET
         value: tu_secreto_jwt
+    staticPublishPath: ./public
