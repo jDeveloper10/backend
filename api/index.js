@@ -1,8 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
+const path = require('path');
+const authRoutes = require('../routes/authRoutes');
+const adminRoutes = require('../routes/adminRoutes');
+const attendanceRoutes = require('../routes/attendanceRoutes');
 const { Pool } = require('pg');
 require('dotenv').config();
-const path = require('path');
 
 const app = express();
 
@@ -17,6 +21,9 @@ app.use(cors({
 // Middleware para servir archivos estáticos
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Middleware para logging
+app.use(morgan('combined'));
+
 // Middleware para parsear JSON
 app.use(express.json());
 
@@ -28,60 +35,19 @@ const pool = new Pool({
   }
 });
 
-// Middleware para manejar errores
-app.use((err, req, res, next) => {
-  console.error('Error middleware:', err);
-  res.status(500).json({ 
-    message: 'Error interno del servidor',
-    error: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
-
-// Middleware para logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
-
-// Test de conexión a la base de datos
+// Verificar conexión a la base de datos
 pool.connect()
-  .then(() => {
-    console.log('Conectado a PostgreSQL');
-  })
-  .catch(err => {
-    console.error('Error al conectar a PostgreSQL:', err);
-  });
+  .then(() => console.log('Conectado a PostgreSQL'))
+  .catch(err => console.error('Error conectando a PostgreSQL:', err));
 
 // Rutas
-const authRoutes = require('../routes/authRoutes');
-const adminRoutes = require('../routes/adminRoutes');
-const attendanceRoutes = require('../routes/attendanceRoutes');
-
 app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/attendance', attendanceRoutes);
 
 // Ruta de prueba
-app.get('/', async (req, res) => {
-  try {
-    const client = await pool.connect();
-    try {
-      res.json({ 
-        message: 'API funcionando correctamente',
-        database: 'Conectada',
-        timestamp: new Date().toISOString()
-      });
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error en la ruta de prueba:', error);
-    res.status(500).json({ 
-      error: 'Error al conectar con la base de datos',
-      details: error.message
-    });
-  }
+app.get('/', (req, res) => {
+  res.json({ message: 'API funcionando correctamente' });
 });
 
 // Manejo de errores global
