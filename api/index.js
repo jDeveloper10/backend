@@ -2,27 +2,20 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 require('dotenv').config();
+const path = require('path');
 
 const app = express();
 
 // Configuración de CORS
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://elaborate-torte-d3511a.netlify.app'
-];
-
 app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir solicitudes sin origin (como las de Postman)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('No permitido por CORS'));
-    }
-    return callback(null, true);
-  },
-  credentials: true
+  origin: ['https://elaborate-torte-d3511a.netlify.app', 'http://localhost:5173', 'http://127.0.0.1:5500', 'http://localhost:5500'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
+
+// Middleware para servir archivos estáticos
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Middleware para parsear JSON
 app.use(express.json());
